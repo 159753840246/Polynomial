@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="theme-color" content="#000000"/>
+<title>Polynomial</title>
+<style type="text/css">
+body{background:#000000;}
+canvas{border:4px solid #808080;}
+#btn{background:#000000;color:#ffffff;width:2048px;text-align:center;font-size:100px;border:4px solid #ffffff;}
+</style>
+</head>
+<body>
+<canvas width="2048" height="1024" id="cv"></canvas>
+<input type="button" value="toBlob()" id="btn"></input>
+<script type="text/javascript">
+
+var btn=document.getElementById("btn");
+var cvs=document.getElementById("cv");
+var ctx=cvs.getContext("2d");
+
+ctx.imageSmoothingEnabled=false;
+
+ctx.fillStyle="#000000";
+ctx.fillRect(0,0,2048,1024);
+
+ctx.fillStyle="#00ff00";
+ctx.strokeStyle="#ffff00";
+ctx.lineWidth=2;
+
+btn.addEventListener("click",function(evt){
+cvs.toBlob(function(blob){
+window.open(URL.createObjectURL(blob));
+},"image/png");
+},false);
+
+//style variant weight size family
+var fontStr="bold 40px monospace";
+ctx.font="bold 40px monospace";
+
+var yyyYyyy=100;
+function wr(str){
+ctx.fillText(str,10,yyyYyyy);
+yyyYyyy+=40;
+}
+
+function plus(pa,pb){
+var pc=[],lc=0;
+if(pa.length<pb.length){var ph=pa;pa=pb;pb=ph;}
+var la=pa.length,lb=pb.length;
+for(var i=0;i<lb;i++){
+pc.push(pa[i]+pb[i]);
+}
+for(;i<la;i++){
+pc.push(pa[i]);
+}
+lc=pc.length-1;
+while(pc[lc]===0&&lc>0){pc.pop();lc--;}
+return pc;
+}
+
+function minus(pa,pb){
+var pc=[],lc=0;
+var la=pa.length,lb=pb.length;
+var zero=la<lb;
+var min=zero?la:lb;
+for(var i=0;i<min;i++){
+pc.push(pa[i]-pb[i]);
+}
+if(zero){
+for(;i<lb;i++){
+pc.push(-pb[i]);
+}
+}
+for(;i<la;i++){
+pc.push(pa[i]);
+}
+lc=pc.length-1;
+while(pc[lc]===0&&lc>0){pc.pop();lc--;}
+return pc;
+}
+
+function nmul(n,p){
+var pc=[];
+var lp=p.length;
+if(n===0){return [0];}
+for(var i=0;i<lp;i++){
+pc.push(p[i]*n);
+}
+return pc;
+}
+
+function multiply(pa,pb){
+var pc=pa.slice(0),t=0;
+var la=pa.length,lb=pb.length;
+var lam1=la-1;
+if(la===1&&pa[0]===0||lb===1&&pb[0]===0){return [0];}
+t=pb[0];
+for(var i=0;i<la;i++){
+pc[i]*=t;
+}
+for(var i=1;i<lb;i++){
+t=pb[i];
+if(t===0){pc.push(0);continue;}
+for(var j=0;j<lam1;j++){
+pc[j+i]+=pa[j]*t;
+}
+pc.push(pa[j]*t);
+}
+return pc;
+}
+
+function pwr(p,ex){
+var res=[1],bstr=ex.toString(2);
+var l=bstr.length;
+for(var i=0;i<l;i++){
+res=multiply(res,res);
+if(bstr[i]==="1"){res=multiply(res,p);}
+}
+return res;
+}
+
+function similarTerms(ta,tb){
+var la=ta.length,lb=tb.length;
+if(la!==lb){return false;}
+for(var i=1;ta[i]===tb[i]&&i<la;i++);
+return i===la;
+}
+
+function sortF(x,y){
+var lx=x.length,ly=y.length;
+var ml=Math.min(lx,ly);
+for(var i=1;x[i]===y[i]&&i<ml;i++);
+return lx===ly?(i===lx?0:y[i]-x[i]):(i===ml?ly-lx:y[i]-x[i]);
+}
+
+function plusP(pa,pb){
+var pc=[],item=[];
+var la=pa.length,lb=pb.length,ai=[],bj=[];
+var i=0,j=0,t=0;
+while(i<la&&j<lb){
+ai=pa[i];
+bj=pb[j];
+t=sortF(ai,bj);
+if(t<0){
+if(ai[0]!==0){pc.push(ai.slice(0));}
+i++;
+}else if(t>0){
+if(bj[0]!==0){pc.push(bj.slice(0));}
+j++;
+}else{
+if(ai[0]+bj[0]!==0){
+item=ai.slice(0);
+item[0]+=bj[0];
+pc.push(item);
+}
+i++;
+j++;
+}
+}
+for(;i<la;i++){
+ai=pa[i];
+if(ai[0]!==0){pc.push(ai.slice(0));}
+}
+for(;j<lb;j++){
+bj=pb[j];
+if(bj[0]!==0){pc.push(bj.slice(0));}
+}
+if(pc.length===0){return [[0]];}
+return pc;
+}
+
+function minusP(pa,pb){
+var pc=[],item=[];
+var la=pa.length,lb=pb.length,ai=[],bj=[];
+var i=0,j=0,t=0;
+while(i<la&&j<lb){
+ai=pa[i];
+bj=pb[j];
+t=sortF(ai,bj);
+if(t<0){
+if(ai[0]!==0){pc.push(ai.slice(0));}
+i++;
+}else if(t>0){
+if(bj[0]!==0){
+bj=bj.slice(0);
+bj[0]=-bj[0];
+pc.push(bj);
+}
+j++;
+}else{
+if(ai[0]-bj[0]!==0){
+item=ai.slice(0);
+item[0]-=bj[0];
+pc.push(item);
+}
+i++;
+j++;
+}
+}
+for(;i<la;i++){
+ai=pa[i];
+if(ai[0]!==0){pc.push(ai.slice(0));}
+}
+for(;j<lb;j++){
+bj=pb[j].slice(0);
+if(bj[0]!==0){bj[0]=-bj[0];pc.push(bj);}
+}
+if(pc.length===0){return [[0]];}
+return pc;
+}
+
+function nmulP(n,p){
+if(n===0){return [[0]];}
+var pc=[],t=[];
+var lp=p.length;
+for(var i=0;i<lp;i++){
+t=p[i].slice(0);
+t[0]*=n;
+pc.push(t);
+}
+return pc;
+}
+
+function mmulP(ma,mb){
+var mc=[ma[0]*mb[0]];
+if(mc[0]===0){return mc;}
+var la=ma.length,lb=mb.length,lc=1;
+var min=Math.min(la,lb);
+for(var i=1;i<min;i++){
+mc.push(ma[i]+mb[i]);
+}
+for(;i<la;i++){mc.push(ma[i]);}
+for(;i<lb;i++){mc.push(mb[i]);}
+lc=mc.length-1;
+while(mc[lc]===0&&lc>0){lc.pop();lc--;}
+return mc;
+}
+
+function multiplyP(pa,pb){
+var la=pa.length,lb=pb.length,ps=[],pc=[[0]],ai=[];
+for(var i=0;i<la;i++){
+ai=pa[i];
+ps=[];
+for(var j=0;j<lb;j++){
+ps.push(mmulP(pb[j],ai));
+}
+pc=plusP(ps,pc);
+}
+return pc;
+}
+
+function pwrP(p,ex){
+var res=[[1]],bstr=ex.toString(2);
+var l=bstr.length;
+for(var i=0;i<l;i++){
+res=multiplyP(res,res);
+if(bstr[i]==="1"){res=multiplyP(p,res);}
+}
+return res;
+}
+
+function cxip(c,i,p){
+var m=[c];
+for(var k=1;k<i;k++){m.push(0);}
+m.push(p);
+return [m];
+}
+
+function isDescendingMonomial(m){
+var lm1=m.length-1;
+for(var i=1;m[i]>=m[i+1]&&i<lm1;i++);
+return lm1>0&&i===lm1;
+}
+
+function indexDescendingMonomial(p){
+var l=p.length;
+for(var i=0;i<l&&!isDescendingMonomial(p[i]);i++);
+return i===l?-1:i;
+}
+
+function symmetricPolynomial(k,n){
+if(k===0){return [[1]];}
+if(k>n){return [[0]];}
+if(k===n){
+var sp=[1];
+for(var i=0;i<n;i++){sp.push(1);}
+return [sp];
+}
+var s=[1];
+for(var i=0;i<n;i++){s.push(0);}
+s[n]=1;
+return plusP(symmetricPolynomial(k,n-1),multiplyP([s],symmetricPolynomial(k-1,n-1)));
+}
+
+function symmetricReduction(p){
+var lp=p.length,a0=[],b0=[],diff=[],q=[[0]],lam1=0,lb=0,n=0,poly=[],t=[],sp=[];
+for(var k=0;k<lp;k++){
+t=p[k].slice(0);
+poly.push(t);
+if(t.length>n){n=t.length;}
+}
+n--;
+for(k=0;k<=n;k++){
+sp.push(symmetricPolynomial(k,n));
+}
+k=indexDescendingMonomial(poly);
+while(k!==-1){
+a0=poly[k].slice(0);
+b0=[a0[0]];
+diff=[[a0[0]]];
+lam1=a0.length-1;
+for(var i=1;i<lam1;i++){
+b0.push(a0[i]-a0[i+1]);
+}
+b0.push(a0[i]);
+lb=b0.length-1;
+while(b0[lb]===0&&lb>0){b0.pop();lb--;}
+lb++;
+for(i=1;i<lb;i++){
+diff=multiplyP(pwrP(sp[i],b0[i]),diff);
+}
+poly=minusP(poly,diff);
+q=plusP([b0],q);
+k=indexDescendingMonomial(poly);
+}
+return [q,poly];
+}
+
+function powerSum(p,n){
+var sn=[],seed=[1,p];
+sn.push(seed.slice(0));
+for(var i=1;i<n;i++){
+seed[i]=0;
+seed.push(p);
+sn.push(seed.slice(0));
+}
+return sn;
+}
+
+function NG(k){
+if(k===1){return [[1,1]];}
+var sn=[[0]];
+for(var i=1;i<k;i++){
+sn=(i&1)?plusP(sn,multiplyP(cxip(1,i,1),NG(k-i))):minusP(sn,multiplyP(cxip(1,i,1),NG(k-i)));
+}
+sn=(i&1)?plusP(sn,cxip(k,i,1)):minusP(sn,cxip(k,i,1));
+return sn;
+}
+
+function cp(k,n){
+if(k===0){return [[1]];}
+if(n===1){return [[1,k]];}
+var seed=[1];
+for(var i=0;i<n;i++){seed.push(0);}
+seed[n]=k;
+var c=[seed.slice(0)];
+for(var i=1;i<k;i++){
+seed[n]=k-i;
+c=plusP(multiplyP([seed.slice(0)],cp(i,n-1)),c);
+}
+c=plusP(cp(k,n-1),c);
+return c;
+}
+
+function setFontSize(s){
+var str=ctx.font;
+ctx.font=str.replace(/[0-9\.]+(?=px)/,s+"");
+}
+
+function getFontSize(){
+return parseFloat(ctx.font.replace(/[^0-9\.]/ig,""));
+}
+
+function prt(p,v,rev,x,y){
+var lp=p.length,dx=0,coeff=0,str="",fs=0,fsubp=0,isFirstTerm=true;
+ctx.save();
+ctx.font=fontStr;
+ctx.textAlign="left";
+fs=getFontSize();
+fsubp=fs*0.6;
+if(lp===1&&p[0]===0){
+str="0";
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x,y);
+return ctx.measureText(str).width;
+}
+if(rev){
+var i=lp-1;
+coeff=p[i];
+str+=coeff===1?"":coeff===-1?"-":coeff;
+str+=i===0?"":v;
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+dx,y);
+dx+=ctx.measureText(str).width;
+str=i===0||i===1?"":i+"";
+ctx.textBaseline="top";
+setFontSize(fsubp);
+ctx.fillText(str,x+dx,y-fs);
+dx+=ctx.measureText(str).width;
+ctx.font=fontStr;
+isFirstTerm=false;
+for(i--;i>=0;i--){
+coeff=p[i];
+if(coeff===0){continue;}
+str=coeff>0?"+":"";
+str+=coeff===1?"":coeff===-1?"-":coeff;
+str+=i===0?"":v;
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+dx,y);
+dx+=ctx.measureText(str).width;
+str=i===0||i===1?"":i+"";
+ctx.textBaseline="top";
+setFontSize(fsubp);
+ctx.fillText(str,x+dx,y-fs);
+dx+=ctx.measureText(str).width;
+ctx.font=fontStr;
+}
+}else{
+coeff=p[0];
+if(coeff!==0){
+str=coeff+"";
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+dx,y);
+dx+=ctx.measureText(str).width;
+isFirstTerm=false;
+}
+for(var i=1;i<lp;i++){
+coeff=p[i];
+if(coeff===0){continue;}
+str=coeff>0&&!isFirstTerm?"+":"";
+str+=(coeff===1?"":coeff===-1?"-":coeff)+v;
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+dx,y);
+dx+=ctx.measureText(str).width;
+str=i===1?"":i+"";
+ctx.textBaseline="top";
+setFontSize(fsubp);
+ctx.fillText(str,x+dx,y-fs);
+dx+=ctx.measureText(str).width;
+ctx.font=fontStr;
+isFirstTerm=false;
+}
+}
+ctx.restore();
+return dx;
+}
+
+function prtM(m,v,isFirstTerm,fs,fsubp,x,y){
+if(m[0]===0){return 0;}
+var l=m.length,mi=0,w=0,sub=(v.length===1),wsub=0;
+mi=m[0];
+var str=mi>0&&!isFirstTerm?"+":"";
+str+=mi===1?"":mi===-1?"-":mi;
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+w,y);
+w+=ctx.measureText(str).width;
+for(var i=1;i<l;i++){
+mi=m[i];
+if(mi===0){continue;}
+str=sub?v:v[i-1];
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x+w,y);
+w+=ctx.measureText(str).width;
+if(sub){
+str=i+"";
+ctx.textBaseline="middle";
+setFontSize(fsubp);
+ctx.fillText(str,x+w,y);
+wsub=ctx.measureText(str).width;
+ctx.font=fontStr;
+}
+if(mi===1){w+=wsub;continue;}
+str=mi+"";
+ctx.textBaseline="top";
+setFontSize(fsubp);
+ctx.fillText(str,x+w,y-fs);
+w+=Math.max(wsub,ctx.measureText(str).width);
+ctx.font=fontStr;
+}
+return w;
+}
+
+function prtP(p,v,rev,x,y){
+var lp=p.length,dx=0,fs=0,fsubp=0;
+ctx.save();
+ctx.font=fontStr;
+ctx.textAlign="left";
+fs=getFontSize();
+fsubp=fs*0.6;
+if(lp===1&&p[0][0]===0){
+str="0";
+ctx.textBaseline="alphabetic";
+ctx.fillText(str,x,y);
+return ctx.measureText(str).width;
+}
+if(rev){
+var i=lp-1;
+dx+=prtM(p[i],v,true,fs,fsubp,x+dx,y);
+for(i--;i>=0;i--){
+dx+=prtM(p[i],v,false,fs,fsubp,x+dx,y);
+}
+}else{
+dx+=prtM(p[0],v,true,fs,fsubp,x+dx,y);
+for(var i=1;i<lp;i++){
+dx+=prtM(p[i],v,false,fs,fsubp,x+dx,y);
+}
+}
+ctx.restore();
+return dx;
+}
+
+
+//multiplyP shorter longer;
+
+fontStr="bold 24px monospace";
+ctx.font="bold 40px monospace";
+
+
+
+//var a=multiplyP(multiplyP([[1,1],[-1,0,1]],[[1,0,1],[-1,0,0,1]]),[[1,1],[-1,0,0,1]]);
+var quad=multiplyP(multiplyP(multiplyP([[1,1],[-1,0,1]],[[1,0,1],[-1,0,0,1]]),[[1,1],[-1,0,0,1]]),multiplyP(multiplyP([[1,1],[-1,0,0,0,1]],[[1,0,1],[-1,0,0,0,1]]),[[1,0,0,1],[-1,0,0,0,1]]));
+var a=multiplyP(quad,quad);
+var b=symmetricReduction(a);
+
+prtP(b[0],"σ",false,10,700);
+prtP(b[1],"x",false,10,750);
+
+ctx.fillStyle="#ffff00";
+prtP(powerSum(6,9),"x",false,100,800);
+
+ctx.fillStyle="#00ff00";
+
+
+var d=(new Date()).getTime();
+(function(n){
+var a=[];
+var y=50;
+for(var i=1;i<=n;i++){
+a=NG(i);
+prtP(a,"σ",false,5,y);
+y+=32;
+}
+})(12);
+alert((new Date()).getTime()-d);
+
+</script>
+</body>
